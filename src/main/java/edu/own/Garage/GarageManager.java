@@ -1,21 +1,28 @@
 package edu.own.Garage;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
-
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.IOException;
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.*;
 
 /**
- * Garage simple model
+ * GarageManager simple model
  */
-public class Garage {
+public class GarageManager {
+    private enum Selections {
+        baseCars("select Makes.name_ as make, Models.name_ as model from Makes, Models, BaseCars\n"
+                + "where Makes.id_ = Models.makeId_ and BaseCars.modelId_ = Models.id_;");
+
+        private String value;
+
+        Selections(String value) {
+            this.value = value;
+        }
+    }
     /**
-     * path to .json file stored possible car enumeration
+     * connection with garage data base
      */
-    private String carBaseFilePath;
+    private Connection garage;
     /**
      * contains possible cars loaded from .json file
      * pairs of (make, models)
@@ -27,30 +34,27 @@ public class Garage {
      */
     private Map<String, Map<String, Integer>> ownCars;
 
-    public Garage(String carBaseFilePath) throws IOException {
-        this.carBaseFilePath = carBaseFilePath;
+    public GarageManager(Connection garage) throws SQLException {
+        this.garage = garage;
+        baseCars = new HashMap<>();
         ownCars = new HashMap<>();
         loadCarBase();
     }
 
-    private void loadCarBase() throws IOException {
-        FileReader reader = new FileReader(carBaseFilePath);
-        ObjectMapper mapper = new ObjectMapper();
-        baseCars = mapper.readValue(reader, mapper.getTypeFactory().constructMapType(HashMap.class, String.class, Set.class));
-        reader.close();
-        if (baseCars.isEmpty())
-            throw new IllegalArgumentException("Base cars list must have at least one car!");
+    private void addBaseCar(String make, String model) {
+        if (!baseCars.containsKey(make))
+            baseCars.put(make, new HashSet<>(Collections.singletonList(model)));
+        else
+            baseCars.get(make).add(model);
     }
-    private void saveCarBase() throws IOException {
-        FileWriter writer = new FileWriter(carBaseFilePath);
-        ObjectMapper mapper = new ObjectMapper();
-        mapper.enable(SerializationFeature.INDENT_OUTPUT);
-        mapper.writeValue(writer, baseCars);
-        writer.close();
+    private void loadCarBase() throws SQLException {
+        ResultSet rs = garage.createStatement().executeQuery(Selections.baseCars.value);
+        while(rs.next())
+            addBaseCar(rs.getString("make"), rs.getString("model"));
     }
 
     private void printHelp() {
-        System.out.println("--- Garage Usage ---");
+        System.out.println("--- GarageManager Usage ---");
         System.out.println("- help: views this help");
         System.out.println("- show: shows own cars");
         System.out.println("- add: adds new car");
@@ -62,7 +66,6 @@ public class Garage {
             System.out.println("There are no base cars!");
             return;
         }
-
         for (Map.Entry<String, Set<String>> make : baseCars.entrySet())
             System.out.println(make.getKey() + ": " + make.getValue());
     }
@@ -71,7 +74,6 @@ public class Garage {
             System.out.println("Your garage is empty!");
             return;
         }
-
         for (Map.Entry<String, Map<String, Integer>> make : ownCars.entrySet())
             System.out.println(make.getKey() + ": " + make.getValue());
     }
@@ -101,14 +103,6 @@ public class Garage {
         System.out.print("- model: ");
         String model = sc.nextLine();
         addCar(make, model);
-    }
-    private void removeCars(String make) {
-        if (!ownCars.containsKey(make)) {
-            System.out.println("Error: Your garage has not any car with make \"" + make + "\", so nothing to remove!");
-            return;
-        }
-        ownCars.remove(make);
-        System.out.println("Done!");
     }
     private void removeCar(String make, String model) {
         if (!(ownCars.containsKey(make) && ownCars.get(make).containsKey(model))) {
@@ -144,6 +138,7 @@ public class Garage {
 
     public void launch() {
         System.out.println("Welcome to garage!");
+        printHelp();
         Scanner sc = new Scanner(System.in);
         String cmd = "";
         while (!cmd.equals("exit")) {

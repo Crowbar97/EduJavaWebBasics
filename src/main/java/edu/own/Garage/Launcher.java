@@ -1,19 +1,19 @@
 package edu.own.Garage;
 
-import java.io.IOException;
+import java.sql.*;
 
 public class Launcher {
-    public static void main(String[] args) {
-        if (args.length == 1)
-            try {
-                Garage garage = new Garage(args[0]);
-                garage.launch();
-            } catch (IllegalArgumentException e) {
-                System.out.println(e.getMessage());
-            } catch (IOException e) {
-                System.err.println(e.getMessage());
-            }
-        else
-            System.err.println("Argument missing!\nUsage: Garage <path/to/carBase.json>");
+    public static void main(String[] args) throws ClassNotFoundException, SQLException {
+        if (args.length == 4) {
+            Class.forName(args[0]);
+            new GarageManager(DriverManager.getConnection(args[1], args[2], args[3])).launch();
+        } else
+            System.out.println("Arguments mismatch! Usage:"
+                    + "\nGarageLauncher \\"
+                    + "\n\t<JDBC Driver> \\"
+                    + "\n\t<DB connection URL> \\"
+                    + "\n\t<User name> \\"
+                    + "\n\t<Password>");
+
     }
 }
