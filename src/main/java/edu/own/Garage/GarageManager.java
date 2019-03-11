@@ -1,49 +1,21 @@
 package edu.own.Garage;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import java.sql.*;
 import java.util.*;
 
 /**
  * GarageManager simple model
  */
 public class GarageManager {
-    private enum Queries {;
-        private enum Select {
-            baseCars("select Makes.name_ as make, Models.name_ as model from Makes, Models, BaseCars\n"
-                        + "where Makes.id_ = Models.makeId_ and BaseCars.modelId_ = Models.id_;"),
-            ownCars("select Makes.name_ as make, Models.name_ as model, OwnCars.count_ as count from Makes, Models, OwnCars\n"
-                        + "where Makes.id_ = Models.makeId_ and OwnCars.modelId_ = Models.id_;");
+    private enum Procedures {
+        getBaseCars("{call getBaseCars()}"),
+        getCars("{call getCars()}"),
+        saveCars("{call saveCars(?)}");
 
-            private String proc;
+        private String call;
 
-            Select(String proc) {
-                this.proc = proc;
-            }
-        }
-    }
-    private enum Updates {;
-        private enum Insert {
-            car("insert OwnCars (modelId_, count_)\n"
-                    + "select Models.id_, ? from Models, Makes\n"
-                        + "where Models.name_ = ? and Makes.name_ = ? and Models.makeId_ = Makes.id_;");
-
-            private String proc;
-
-            Insert(String proc) {
-                this.proc = proc;
-            }
-        }
-        private enum Delete {
-            allCars("truncate OwnCars;");
-
-            private String proc;
-
-            Delete(String value) {
-                this.proc = value;
-            }
+        Procedures(String call) {
+            this.call = call;
         }
     }
     /**
@@ -76,35 +48,42 @@ public class GarageManager {
     private void loadBaseCars() throws SQLException {
         System.out.println("Loading car base...");
         baseCars = new HashMap<>();
-        ResultSet rs = garage.createStatement().executeQuery(Queries.Select.baseCars.proc);
-        while(rs.next())
-            addBaseCar(rs.getString("make"), rs.getString("model"));
+        try (CallableStatement call = garage.prepareCall(Procedures.getBaseCars.call)) {
+            call.execute();
+            ResultSet rs = call.getResultSet();
+            while(rs.next())
+                addBaseCar(rs.getString("make"), rs.getString("model"));
+        }
         System.out.println("Done!");
     }
     private void loadCars() throws SQLException {
         System.out.println("Opening the garage...");
         ownCars = new HashMap<>();
-        ResultSet rs = garage.createStatement().executeQuery(Queries.Select.ownCars.proc);
-        while(rs.next())
-            addCar(rs.getString("make"), rs.getString("model"), rs.getInt("count"), false);
+        try (CallableStatement call = garage.prepareCall(Procedures.getCars.call)) {
+            call.execute();
+            ResultSet rs = call.getResultSet();
+            while (rs.next())
+                addCar(rs.getString("make"), rs.getString("model"), rs.getInt("count"), false);
+        }
         System.out.println("Done!");
+    }
+    private String getStrOwnCars() {
+        StringBuilder cars = new StringBuilder();
+        ownCars.forEach((make, models) ->
+                models.forEach((model, count) ->
+                                cars.append("('").append(make).append("','").append(model).append("',").append(count).append("),")
+                        )
+                );
+        cars.deleteCharAt(cars.length() - 1);
+        return cars.toString();
     }
     private void saveCars() throws SQLException {
         System.out.println("Closing garage...");
-        PreparedStatement s = garage.prepareStatement(Updates.Insert.car.proc);
-        s.executeUpdate(Updates.Delete.allCars.proc);
-        ownCars.forEach((make, models) ->
-                models.forEach((model, count) -> {
-                    try {
-                        s.setInt(1, count);
-                        s.setString(2, model);
-                        s.setString(3, make);
-                        s.addBatch();
-                    } catch (SQLException e) {
-                        System.out.println(e.getMessage());
-                    }
-                }));
-        s.executeBatch();
+        try (CallableStatement call = garage.prepareCall(Procedures.saveCars.call)) {
+            call.setString(1, getStrOwnCars());
+            call.execute();
+        }
+        garage.close();
         System.out.println("Done!");
     }
 
