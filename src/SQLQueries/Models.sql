@@ -19,7 +19,7 @@ insert Models (name_, makeId_) values
 ('b4', 3),
 ('c4', 3);
 
-# delete from Models where id_ > 0;
+# truncate Models;
 
 select * from Models;
 

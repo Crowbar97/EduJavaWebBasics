@@ -12,6 +12,6 @@ insert Makes (name_) values
 ('bmw'),
 ('audi');
 
-# delete from Makes where id_ > 0;
+# truncate Makes;
 
 select * from Makes;
