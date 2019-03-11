@@ -1,6 +1,7 @@
 package edu.own.Garage;
 
 import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.*;
@@ -9,14 +10,40 @@ import java.util.*;
  * GarageManager simple model
  */
 public class GarageManager {
-    private enum Selections {
-        baseCars("select Makes.name_ as make, Models.name_ as model from Makes, Models, BaseCars\n"
-                + "where Makes.id_ = Models.makeId_ and BaseCars.modelId_ = Models.id_;");
+    private enum Queries {;
+        private enum Select {
+            baseCars("select Makes.name_ as make, Models.name_ as model from Makes, Models, BaseCars\n"
+                        + "where Makes.id_ = Models.makeId_ and BaseCars.modelId_ = Models.id_;"),
+            ownCars("select Makes.name_ as make, Models.name_ as model, OwnCars.count_ as count from Makes, Models, OwnCars\n"
+                        + "where Makes.id_ = Models.makeId_ and OwnCars.modelId_ = Models.id_;");
 
-        private String value;
+            private String proc;
 
-        Selections(String value) {
-            this.value = value;
+            Select(String proc) {
+                this.proc = proc;
+            }
+        }
+    }
+    private enum Updates {;
+        private enum Insert {
+            car("insert OwnCars (modelId_, count_)\n"
+                    + "select Models.id_, ? from Models, Makes\n"
+                        + "where Models.name_ = ? and Makes.name_ = ? and Models.makeId_ = Makes.id_;");
+
+            private String proc;
+
+            Insert(String proc) {
+                this.proc = proc;
+            }
+        }
+        private enum Delete {
+            allCars("truncate OwnCars;");
+
+            private String proc;
+
+            Delete(String value) {
+                this.proc = value;
+            }
         }
     }
     /**
@@ -36,9 +63,8 @@ public class GarageManager {
 
     public GarageManager(Connection garage) throws SQLException {
         this.garage = garage;
-        baseCars = new HashMap<>();
-        ownCars = new HashMap<>();
-        loadCarBase();
+        loadBaseCars();
+        loadCars();
     }
 
     private void addBaseCar(String make, String model) {
@@ -47,10 +73,39 @@ public class GarageManager {
         else
             baseCars.get(make).add(model);
     }
-    private void loadCarBase() throws SQLException {
-        ResultSet rs = garage.createStatement().executeQuery(Selections.baseCars.value);
+    private void loadBaseCars() throws SQLException {
+        System.out.println("Loading car base...");
+        baseCars = new HashMap<>();
+        ResultSet rs = garage.createStatement().executeQuery(Queries.Select.baseCars.proc);
         while(rs.next())
             addBaseCar(rs.getString("make"), rs.getString("model"));
+        System.out.println("Done!");
+    }
+    private void loadCars() throws SQLException {
+        System.out.println("Opening the garage...");
+        ownCars = new HashMap<>();
+        ResultSet rs = garage.createStatement().executeQuery(Queries.Select.ownCars.proc);
+        while(rs.next())
+            addCar(rs.getString("make"), rs.getString("model"), rs.getInt("count"), false);
+        System.out.println("Done!");
+    }
+    private void saveCars() throws SQLException {
+        System.out.println("Closing garage...");
+        PreparedStatement s = garage.prepareStatement(Updates.Insert.car.proc);
+        s.executeUpdate(Updates.Delete.allCars.proc);
+        ownCars.forEach((make, models) ->
+                models.forEach((model, count) -> {
+                    try {
+                        s.setInt(1, count);
+                        s.setString(2, model);
+                        s.setString(3, make);
+                        s.addBatch();
+                    } catch (SQLException e) {
+                        System.out.println(e.getMessage());
+                    }
+                }));
+        s.executeBatch();
+        System.out.println("Done!");
     }
 
     private void printHelp() {
@@ -79,8 +134,12 @@ public class GarageManager {
     }
 
     private void addCar(String make, String model) {
+        addCar(make, model, 1, true);
+    }
+    private void addCar(String make, String model, int count, boolean verbose) {
         if (!(baseCars.containsKey(make) && baseCars.get(make).contains(model))) {
-            System.out.println("Error: Car with make \"" + make + "\" and model \"" + model + "\" does not exist in the car base!");
+            if (verbose)
+                System.out.println("Error: Car with make \"" + make + "\" and model \"" + model + "\" does not exist in the car base!");
             return;
         }
 
@@ -88,11 +147,12 @@ public class GarageManager {
             ownCars.put(make, new HashMap<>());
 
         if (!ownCars.get(make).containsKey(model))
-            ownCars.get(make).put(model, 1);
+            ownCars.get(make).put(model, count);
         else
-            ownCars.get(make).replace(model, ownCars.get(make).get(model) + 1);
+            ownCars.get(make).replace(model, ownCars.get(make).get(model) + count);
 
-        System.out.println("Done!");
+        if (verbose)
+            System.out.println("Done!");
     }
     private void addCar() {
         System.out.println("Choose car to add from base cars listed below:");
@@ -136,8 +196,8 @@ public class GarageManager {
         removeCar(make, model);
     }
 
-    public void launch() {
-        System.out.println("Welcome to garage!");
+    public void launch() throws SQLException {
+        System.out.println("Welcome to the garage!");
         printHelp();
         Scanner sc = new Scanner(System.in);
         String cmd = "";
@@ -158,6 +218,7 @@ public class GarageManager {
                     removeCar();
                     break;
                 case "exit":
+                    saveCars();
                     break;
                 default:
                     printHelp();
