@@ -40,7 +40,7 @@ public class GarageManager {
         loadCars();
     }
 
-    private void adAvailCar(String mark, String model) {
+    private void addAvailCar(String mark, String model) {
         if (!availCars.containsKey(mark))
             availCars.put(mark, new HashSet<>(Collections.singletonList(model)));
         else
@@ -53,7 +53,7 @@ public class GarageManager {
             call.execute();
             ResultSet rs = call.getResultSet();
             while(rs.next())
-                adAvailCar(rs.getString("mark"), rs.getString("model"));
+                addAvailCar(rs.getString("mark"), rs.getString("model"));
         }
         System.out.println("Done!");
     }
