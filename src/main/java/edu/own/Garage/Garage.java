@@ -15,37 +15,37 @@ public class Garage {
     /**
      * path to .json file stored possible car enumeration
      */
-    private String carBaseFilePath;
+    private String availCarsFilePath;
     /**
      * contains possible cars loaded from .json file
      * pairs of (marks, models)
      */
-    private Map<String, Set<String>> baseCars;
+    private Map<String, Set<String>> availCars;
     /**
      * contains own cars
      * pairs of (marks, (model, count))
      */
     private Map<String, Map<String, Integer>> ownCars;
 
-    public Garage(String carBaseFilePath) throws IOException {
-        this.carBaseFilePath = carBaseFilePath;
+    public Garage(String carAvailFilePath) throws IOException {
+        this.availCarsFilePath = carAvailFilePath;
         ownCars = new HashMap<>();
-        loadCarBase();
+        loadAvailCars();
     }
 
-    private void loadCarBase() throws IOException {
-        FileReader reader = new FileReader(carBaseFilePath);
+    private void loadAvailCars() throws IOException {
+        FileReader reader = new FileReader(availCarsFilePath);
         ObjectMapper mapper = new ObjectMapper();
-        baseCars = mapper.readValue(reader, mapper.getTypeFactory().constructMapType(HashMap.class, String.class, Set.class));
+        availCars = mapper.readValue(reader, mapper.getTypeFactory().constructMapType(HashMap.class, String.class, Set.class));
         reader.close();
-        if (baseCars.isEmpty())
-            throw new IllegalArgumentException("Base cars list must have at least one car!");
+        if (availCars.isEmpty())
+            throw new IllegalArgumentException("Available cars list must have at least one car!");
     }
-    private void saveCarBase() throws IOException {
-        FileWriter writer = new FileWriter(carBaseFilePath);
+    private void saveAvailCars() throws IOException {
+        FileWriter writer = new FileWriter(availCarsFilePath);
         ObjectMapper mapper = new ObjectMapper();
         mapper.enable(SerializationFeature.INDENT_OUTPUT);
-        mapper.writeValue(writer, baseCars);
+        mapper.writeValue(writer, availCars);
         writer.close();
     }
 
@@ -57,13 +57,13 @@ public class Garage {
         System.out.println("- remove: removes specified car");
         System.out.println("- exit: closes your garage");
     }
-    private void showBaseCars() {
-        if (baseCars.isEmpty()) {
-            System.out.println("There are no base cars!");
+    private void showAvailCars() {
+        if (availCars.isEmpty()) {
+            System.out.println("There are no available cars!");
             return;
         }
 
-        for (Map.Entry<String, Set<String>> mark : baseCars.entrySet())
+        for (Map.Entry<String, Set<String>> mark : availCars.entrySet())
             System.out.println(mark.getKey() + ": " + mark.getValue());
     }
     private void showOwnCars() {
@@ -77,8 +77,8 @@ public class Garage {
     }
 
     private void addCar(String mark, String model) {
-        if (!(baseCars.containsKey(mark) && baseCars.get(mark).contains(model))) {
-            System.out.println("Error: Car with mark \"" + mark + "\" and model \"" + model + "\" does not exist in the car base!");
+        if (!(availCars.containsKey(mark) && availCars.get(mark).contains(model))) {
+            System.out.println("Error: Car with mark \"" + mark + "\" and model \"" + model + "\" does not available!");
             return;
         }
 
@@ -93,8 +93,8 @@ public class Garage {
         System.out.println("Done!");
     }
     private void addCar() {
-        System.out.println("Choose car to add from base cars listed below:");
-        showBaseCars();
+        System.out.println("Choose car to add from available cars listed below:");
+        showAvailCars();
         Scanner sc = new Scanner(System.in);
         System.out.print("- mark: ");
         String mark = sc.nextLine();
@@ -144,6 +144,7 @@ public class Garage {
 
     public void launch() {
         System.out.println("Welcome to garage!");
+        printHelp();
         Scanner sc = new Scanner(System.in);
         String cmd = "";
         while (!cmd.equals("exit")) {

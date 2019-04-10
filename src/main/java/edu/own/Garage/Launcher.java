@@ -12,6 +12,6 @@ public class Launcher {
                 System.out.println(e.getMessage());
             }
         else
-            System.out.println("Arguments mismatch!\nThere must be next arguments:\n- path to car base JSON file");
+            System.out.println("Arguments mismatch!\nThere must be next arguments:\n- path to avail cars JSON file");
     }
 }
