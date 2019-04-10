@@ -18,12 +18,12 @@ public class Garage {
     private String carBaseFilePath;
     /**
      * contains possible cars loaded from .json file
-     * pairs of (make, models)
+     * pairs of (marks, models)
      */
     private Map<String, Set<String>> baseCars;
     /**
      * contains own cars
-     * pairs of (make, (model, count))
+     * pairs of (marks, (model, count))
      */
     private Map<String, Map<String, Integer>> ownCars;
 
@@ -63,8 +63,8 @@ public class Garage {
             return;
         }
 
-        for (Map.Entry<String, Set<String>> make : baseCars.entrySet())
-            System.out.println(make.getKey() + ": " + make.getValue());
+        for (Map.Entry<String, Set<String>> mark : baseCars.entrySet())
+            System.out.println(mark.getKey() + ": " + mark.getValue());
     }
     private void showOwnCars() {
         if (ownCars.isEmpty()) {
@@ -72,23 +72,23 @@ public class Garage {
             return;
         }
 
-        for (Map.Entry<String, Map<String, Integer>> make : ownCars.entrySet())
-            System.out.println(make.getKey() + ": " + make.getValue());
+        for (Map.Entry<String, Map<String, Integer>> mark : ownCars.entrySet())
+            System.out.println(mark.getKey() + ": " + mark.getValue());
     }
 
-    private void addCar(String make, String model) {
-        if (!(baseCars.containsKey(make) && baseCars.get(make).contains(model))) {
-            System.out.println("Error: Car with make \"" + make + "\" and model \"" + model + "\" does not exist in the car base!");
+    private void addCar(String mark, String model) {
+        if (!(baseCars.containsKey(mark) && baseCars.get(mark).contains(model))) {
+            System.out.println("Error: Car with mark \"" + mark + "\" and model \"" + model + "\" does not exist in the car base!");
             return;
         }
 
-        if (!ownCars.containsKey(make))
-            ownCars.put(make, new HashMap<>());
+        if (!ownCars.containsKey(mark))
+            ownCars.put(mark, new HashMap<>());
 
-        if (!ownCars.get(make).containsKey(model))
-            ownCars.get(make).put(model, 1);
+        if (!ownCars.get(mark).containsKey(model))
+            ownCars.get(mark).put(model, 1);
         else
-            ownCars.get(make).replace(model, ownCars.get(make).get(model) + 1);
+            ownCars.get(mark).replace(model, ownCars.get(mark).get(model) + 1);
 
         System.out.println("Done!");
     }
@@ -96,33 +96,33 @@ public class Garage {
         System.out.println("Choose car to add from base cars listed below:");
         showBaseCars();
         Scanner sc = new Scanner(System.in);
-        System.out.print("- make: ");
-        String make = sc.nextLine();
+        System.out.print("- mark: ");
+        String mark = sc.nextLine();
         System.out.print("- model: ");
         String model = sc.nextLine();
-        addCar(make, model);
+        addCar(mark, model);
     }
-    private void removeCars(String make) {
-        if (!ownCars.containsKey(make)) {
-            System.out.println("Error: Your garage has not any car with make \"" + make + "\", so nothing to remove!");
+    private void removeCars(String mark) {
+        if (!ownCars.containsKey(mark)) {
+            System.out.println("Error: Your garage has not any car with mark \"" + mark + "\", so nothing to remove!");
             return;
         }
-        ownCars.remove(make);
+        ownCars.remove(mark);
         System.out.println("Done!");
     }
-    private void removeCar(String make, String model) {
-        if (!(ownCars.containsKey(make) && ownCars.get(make).containsKey(model))) {
-            System.out.println("Error: Car with make \"" + make + "\" and model \"" + model + "\" does not exist in your garage!");
+    private void removeCar(String mark, String model) {
+        if (!(ownCars.containsKey(mark) && ownCars.get(mark).containsKey(model))) {
+            System.out.println("Error: Car with mark \"" + mark + "\" and model \"" + model + "\" does not exist in your garage!");
             return;
         }
 
-        if (ownCars.get(make).get(model) > 1)
-            ownCars.get(make).replace(model, ownCars.get(make).get(model) - 1);
+        if (ownCars.get(mark).get(model) > 1)
+            ownCars.get(mark).replace(model, ownCars.get(mark).get(model) - 1);
         else
-            ownCars.get(make).remove(model);
+            ownCars.get(mark).remove(model);
 
-        if (ownCars.get(make).isEmpty())
-            ownCars.remove(make);
+        if (ownCars.get(mark).isEmpty())
+            ownCars.remove(mark);
 
         System.out.println("Done!");
     }
@@ -135,11 +135,11 @@ public class Garage {
         System.out.println("Choose car to remove from own cars listed below:");
         showOwnCars();
         Scanner sc = new Scanner(System.in);
-        System.out.print("- make: ");
-        String make = sc.nextLine();
+        System.out.print("- mark: ");
+        String mark = sc.nextLine();
         System.out.print("- model: ");
         String model = sc.nextLine();
-        removeCar(make, model);
+        removeCar(mark, model);
     }
 
     public void launch() {

@@ -8,12 +8,10 @@ public class Launcher {
             try {
                 Garage garage = new Garage(args[0]);
                 garage.launch();
-            } catch (IllegalArgumentException e) {
-                System.out.println(e.getMessage());
             } catch (IOException e) {
-                System.err.println(e.getMessage());
+                System.out.println(e.getMessage());
             }
         else
-            System.err.println("Argument missing!\nUsage: Garage <path/to/carBase.json>");
+            System.out.println("Arguments mismatch!\nThere must be next arguments:\n- path to car base JSON file");
     }
 }
