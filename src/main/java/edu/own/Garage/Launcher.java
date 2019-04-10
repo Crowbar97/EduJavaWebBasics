@@ -8,12 +8,12 @@ public class Launcher {
             Class.forName(args[0]);
             new GarageManager(DriverManager.getConnection(args[1], args[2], args[3])).launch();
         } else
-            System.out.println("Arguments mismatch! Usage:"
-                    + "\nGarageLauncher \\"
-                    + "\n\t<JDBC Driver> \\"
-                    + "\n\t<DB connection URL> \\"
-                    + "\n\t<User name> \\"
-                    + "\n\t<Password>");
+            System.out.println("Arguments mismatch!"
+                    + "There must be next arguments:"
+                    + "- <JDBC Driver string specification>"
+                    + "- <DB connection URL>"
+                    + "- <User name>"
+                    + "- <Password>");
 
     }
 }

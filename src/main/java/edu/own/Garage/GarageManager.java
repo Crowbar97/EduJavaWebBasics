@@ -8,9 +8,9 @@ import java.util.*;
  */
 public class GarageManager {
     private enum Procedures {
-        getBaseCars("{call getBaseCars()}"),
-        getCars("{call getCars()}"),
-        saveCars("{call saveCars(?)}");
+        getAvailCars("{call get_models()}"),
+        getCars("{call get_cars()}"),
+        saveCars("{call save_cars(?)}");
 
         private String call;
 
@@ -23,36 +23,37 @@ public class GarageManager {
      */
     private Connection garage;
     /**
+     * "avail" means "available"
      * contains possible cars loaded from .json file
-     * pairs of (make, models)
+     * pairs of (mark, models)
      */
-    private Map<String, Set<String>> baseCars;
+    private Map<String, Set<String>> availCars;
     /**
      * contains own cars
-     * pairs of (make, (model, count))
+     * pairs of (mark, (model, count))
      */
     private Map<String, Map<String, Integer>> ownCars;
 
     public GarageManager(Connection garage) throws SQLException {
         this.garage = garage;
-        loadBaseCars();
+        loadAvailCars();
         loadCars();
     }
 
-    private void addBaseCar(String make, String model) {
-        if (!baseCars.containsKey(make))
-            baseCars.put(make, new HashSet<>(Collections.singletonList(model)));
+    private void adAvailCar(String mark, String model) {
+        if (!availCars.containsKey(mark))
+            availCars.put(mark, new HashSet<>(Collections.singletonList(model)));
         else
-            baseCars.get(make).add(model);
+            availCars.get(mark).add(model);
     }
-    private void loadBaseCars() throws SQLException {
-        System.out.println("Loading car base...");
-        baseCars = new HashMap<>();
-        try (CallableStatement call = garage.prepareCall(Procedures.getBaseCars.call)) {
+    private void loadAvailCars() throws SQLException {
+        System.out.println("Loading available cars...");
+        availCars = new HashMap<>();
+        try (CallableStatement call = garage.prepareCall(Procedures.getAvailCars.call)) {
             call.execute();
             ResultSet rs = call.getResultSet();
             while(rs.next())
-                addBaseCar(rs.getString("make"), rs.getString("model"));
+                adAvailCar(rs.getString("mark"), rs.getString("model"));
         }
         System.out.println("Done!");
     }
@@ -63,15 +64,15 @@ public class GarageManager {
             call.execute();
             ResultSet rs = call.getResultSet();
             while (rs.next())
-                addCar(rs.getString("make"), rs.getString("model"), rs.getInt("count"), false);
+                addCar(rs.getString("mark"), rs.getString("model"), rs.getInt("count"), false);
         }
         System.out.println("Done!");
     }
     private String getStrOwnCars() {
         StringBuilder cars = new StringBuilder();
-        ownCars.forEach((make, models) ->
+        ownCars.forEach((mark, models) ->
                 models.forEach((model, count) ->
-                                cars.append("('").append(make).append("','").append(model).append("',").append(count).append("),")
+                                cars.append("('").append(mark).append("','").append(model).append("',").append(count).append("),")
                         )
                 );
         cars.deleteCharAt(cars.length() - 1);
@@ -95,67 +96,67 @@ public class GarageManager {
         System.out.println("- remove: removes specified car");
         System.out.println("- exit: closes your garage");
     }
-    private void showBaseCars() {
-        if (baseCars.isEmpty()) {
-            System.out.println("There are no base cars!");
+    private void showAvailCars() {
+        if (availCars.isEmpty()) {
+            System.out.println("There are no available cars!");
             return;
         }
-        for (Map.Entry<String, Set<String>> make : baseCars.entrySet())
-            System.out.println(make.getKey() + ": " + make.getValue());
+        for (Map.Entry<String, Set<String>> mark : availCars.entrySet())
+            System.out.println(mark.getKey() + ": " + mark.getValue());
     }
     private void showOwnCars() {
         if (ownCars.isEmpty()) {
             System.out.println("Your garage is empty!");
             return;
         }
-        for (Map.Entry<String, Map<String, Integer>> make : ownCars.entrySet())
-            System.out.println(make.getKey() + ": " + make.getValue());
+        for (Map.Entry<String, Map<String, Integer>> mark : ownCars.entrySet())
+            System.out.println(mark.getKey() + ": " + mark.getValue());
     }
 
-    private void addCar(String make, String model) {
-        addCar(make, model, 1, true);
+    private void addCar(String mark, String model) {
+        addCar(mark, model, 1, true);
     }
-    private void addCar(String make, String model, int count, boolean verbose) {
-        if (!(baseCars.containsKey(make) && baseCars.get(make).contains(model))) {
+    private void addCar(String mark, String model, int count, boolean verbose) {
+        if (!(availCars.containsKey(mark) && availCars.get(mark).contains(model))) {
             if (verbose)
-                System.out.println("Error: Car with make \"" + make + "\" and model \"" + model + "\" does not exist in the car base!");
+                System.out.println("Error: Car with mark \"" + mark + "\" and model \"" + model + "\" does not available!");
             return;
         }
 
-        if (!ownCars.containsKey(make))
-            ownCars.put(make, new HashMap<>());
+        if (!ownCars.containsKey(mark))
+            ownCars.put(mark, new HashMap<>());
 
-        if (!ownCars.get(make).containsKey(model))
-            ownCars.get(make).put(model, count);
+        if (!ownCars.get(mark).containsKey(model))
+            ownCars.get(mark).put(model, count);
         else
-            ownCars.get(make).replace(model, ownCars.get(make).get(model) + count);
+            ownCars.get(mark).replace(model, ownCars.get(mark).get(model) + count);
 
         if (verbose)
             System.out.println("Done!");
     }
     private void addCar() {
-        System.out.println("Choose car to add from base cars listed below:");
-        showBaseCars();
+        System.out.println("Choose car to add from available cars listed below:");
+        showAvailCars();
         Scanner sc = new Scanner(System.in);
-        System.out.print("- make: ");
-        String make = sc.nextLine();
+        System.out.print("- mark: ");
+        String mark = sc.nextLine();
         System.out.print("- model: ");
         String model = sc.nextLine();
-        addCar(make, model);
+        addCar(mark, model);
     }
-    private void removeCar(String make, String model) {
-        if (!(ownCars.containsKey(make) && ownCars.get(make).containsKey(model))) {
-            System.out.println("Error: Car with make \"" + make + "\" and model \"" + model + "\" does not exist in your garage!");
+    private void removeCar(String mark, String model) {
+        if (!(ownCars.containsKey(mark) && ownCars.get(mark).containsKey(model))) {
+            System.out.println("Error: Car with mark \"" + mark + "\" and model \"" + model + "\" does not exist in your garage!");
             return;
         }
 
-        if (ownCars.get(make).get(model) > 1)
-            ownCars.get(make).replace(model, ownCars.get(make).get(model) - 1);
+        if (ownCars.get(mark).get(model) > 1)
+            ownCars.get(mark).replace(model, ownCars.get(mark).get(model) - 1);
         else
-            ownCars.get(make).remove(model);
+            ownCars.get(mark).remove(model);
 
-        if (ownCars.get(make).isEmpty())
-            ownCars.remove(make);
+        if (ownCars.get(mark).isEmpty())
+            ownCars.remove(mark);
 
         System.out.println("Done!");
     }
@@ -168,11 +169,11 @@ public class GarageManager {
         System.out.println("Choose car to remove from own cars listed below:");
         showOwnCars();
         Scanner sc = new Scanner(System.in);
-        System.out.print("- make: ");
-        String make = sc.nextLine();
+        System.out.print("- mark: ");
+        String mark = sc.nextLine();
         System.out.print("- model: ");
         String model = sc.nextLine();
-        removeCar(make, model);
+        removeCar(mark, model);
     }
 
     public void launch() throws SQLException {
