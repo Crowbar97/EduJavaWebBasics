@@ -1,3 +1,5 @@
+use `Garage`;
+
 create table `marks` (
 	`id` int not null auto_increment,
     `name` varchar(100) not null unique,

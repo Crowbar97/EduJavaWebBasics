@@ -1,4 +1,6 @@
-create table `own_cars` (
+use `Garage`;
+
+create table `own_models` (
 	`id` int not null auto_increment,
 	
     `model_id` int not null unique,
@@ -8,14 +10,14 @@ create table `own_cars` (
     foreign key (`model_id`) references `models`(`id`)
 );
 
-select * from `own_cars`;
-# drop table `own_cars`;
+select * from `own_models`;
+# drop table `own_models`;
 
 delimiter //
 create procedure `get_cars`()
 begin
-	select `marks`.`name` as `mark`, `models`.`name` as `model`, `own_cars`.`count` as `count` from `marks`, `models`, `own_cars`
-		where `marks`.`id` = `models`.`mark_id` and `own_cars`.`model_id` = `models`.`id`;
+	select `marks`.`name` as `mark`, `models`.`name` as `model`, `own_models`.`count` as `count` from `marks`, `models`, `own_models`
+		where `marks`.`id` = `models`.`mark_id` and `own_models`.`model_id` = `models`.`id`;
 end //
 delimiter ;
 
@@ -25,8 +27,6 @@ call `get_cars`();
 delimiter //
 create procedure `save_cars`(in `cars` text)
 begin
-	truncate `own_cars`;
-    
     create temporary table if not exists `car_batch`
 		select 'XXXXXXXXXX' as `mark_name`, 'XXXXXXXXXX' as `model_name`, 0 as `count`;
     
@@ -35,7 +35,9 @@ begin
 	execute `stmt`;
 	deallocate prepare `stmt`;
     
-    insert `own_cars` (`model_id`, `count`)
+    truncate `own_models`;
+    
+    insert `own_models` (`model_id`, `count`)
 		select `models`.`id`, `car_batch`.`count` from `models`, `marks`, `car_batch`
 			where `models`.`name` = `car_batch`.`model_name` and `marks`.`name` = `car_batch`.`mark_name` and `models`.`mark_id` = `marks`.`id`;
             

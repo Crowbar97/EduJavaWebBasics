@@ -1,3 +1,5 @@
+use `Garage`;
+
 create table `models` (
 	`id` int not null auto_increment,
     `name` varchar(100) not null,
@@ -35,4 +37,4 @@ end //
 delimiter ;
 
 call `get_models`();
-# drop procedure `get_avail_cars`;
+# drop procedure `get_models`;
